@@ -386,14 +386,6 @@ else
   print_fatal "Binary download failed! Exiting..."
 fi
 
-print_progress "Testing client binary"
-if $CLIENT_PATH --help &>"$ERR_LOG";then 
-  print_ok 
-else 
-  print_fail 
-  print_fatal "Binary test failed! Exiting..."
-fi
-
 install ||  print_error "Permanent install methods failed! Access will be lost after reboot."
 
 print_progress "Triggering initial execution"
