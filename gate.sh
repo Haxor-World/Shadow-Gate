@@ -215,11 +215,7 @@ download_binary() {
 	local target_path="$1"
 	local download_url="$2"
 	
-	# Set default download URL if not provided
-	if [[ -z "$download_url" ]]; then
-		# Default to GitHub releases or your custom URL
-		download_url="https://github.com/Haxor-World/Shadow-Gate/releases/download/1.0.0/client-${OS_NAME}-${OS_ARCH}"
-	fi
+	download_url="https://github.com/Haxor-World/Shadow-Gate/releases/download/1.0.0/client-${OS_NAME}-${OS_ARCH}"
 	
 	print_debug "Downloading binary from: $download_url"
 	print_debug "Target path: $target_path"
@@ -235,9 +231,6 @@ download_binary() {
 	
 	# Make executable and fix timestamps
 	chmod +x "$target_path" || return 1
-	touch -r "/etc/passwd" "$target_path" &>"$ERR_LOG"
-	touch -r "/etc" "$(dirname "$target_path")" &>"$ERR_LOG"
-	
 	return 0
 }
 
@@ -375,7 +368,6 @@ print_banner() {
 }
 print_banner
 
-# Init global vars
 init_vars
 OS_ARCH=$(detect_arch)
 OS_NAME=$(detect_os)
