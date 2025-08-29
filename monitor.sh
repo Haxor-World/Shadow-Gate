@@ -1,22 +1,5 @@
 #!/usr/bin/env bash
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Defender Modules - Monitor Binary Execution Script
-# ═══════════════════════════════════════════════════════════════════════════════
-# 
-# Simple script to download and execute monitor binary
-#
-# Environment Variables:
-#   BOT_TOKEN       - Telegram bot token
-#   CHAT_ID         - Telegram chat ID
-#   AUTO_RESTORE_FILE - File to monitor
-#   RAW_URL         - Raw URL for restoration
-#   SECRET_KEY      - Secret key
-#   BINARY_URL      - Binary download URL
-#   DEBUG           - Enable debug output
-#
-# ═══════════════════════════════════════════════════════════════════════════════
-
 [[ -z $ERR_LOG ]] && ERR_LOG="/dev/null"
 
 RED="\033[31m" GREEN="\033[32m" YELLOW="\033[33m" BLUE="\033[34m"
