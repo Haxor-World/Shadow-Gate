@@ -403,3 +403,4 @@ else
 fi
 
 print_usage
+clean_exit
